@@ -50,3 +50,4 @@ logs/
 *.gguf
 *.bin
 /models/
+.env.example
