@@ -12,10 +12,10 @@
 ## Milestone 1 — Project Skeleton & Foundation
 
 ### 1.1 Repository Bootstrap
-- [ ] Create top-level files: `wsgi.py`, `requirements.txt`, `.env.example`, `.gitignore`
-- [ ] Create the `app/` package with `__init__.py` (empty Flask app factory stub)
-- [ ] Create empty directory scaffolding: `app/api/`, `app/ws/`, `app/services/`, `app/models/`, `app/repositories/`, `app/utils/`, `prompts/`, `data/`, `migrations/`, `scripts/`, `tests/`
-- [ ] Add `__init__.py` files to all Python packages
+- [x] Create top-level files: `wsgi.py`, `requirements.txt`, `.env.example`, `.gitignore`
+- [x] Create the `app/` package with `__init__.py` (empty Flask app factory stub)
+- [x] Create empty directory scaffolding: `app/api/`, `app/ws/`, `app/services/`, `app/models/`, `app/repositories/`, `app/utils/`, `prompts/`, `data/`, `migrations/`, `scripts/`, `tests/`
+- [x] Add `__init__.py` files to all Python packages
 
 ### 1.2 Configuration & Environment
 - [ ] Implement `app/config.py` with `Dev`, `Prod`, and `Test` configuration classes loading from environment variables

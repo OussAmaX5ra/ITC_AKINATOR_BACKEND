@@ -1,0 +1,2 @@
+# migrations/ — Alembic database migration files
+# Initialized via: flask db init  (Milestone 2.3)
