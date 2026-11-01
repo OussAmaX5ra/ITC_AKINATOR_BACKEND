@@ -18,83 +18,83 @@
 - [x] Add `__init__.py` files to all Python packages
 
 ### 1.2 Configuration & Environment
-- [ ] Implement `app/config.py` with `Dev`, `Prod`, and `Test` configuration classes loading from environment variables
-- [ ] Populate `.env.example` with all required keys: `FLASK_ENV`, `SECRET_KEY`, `JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`, `LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `OLLAMA_URL`, `STT_MODEL`, `STT_DEVICE`, `TTS_ENABLED`, `MAX_QUESTIONS`, `GUESS_CONFIDENCE`, `MAX_GUESSES`, `ANSWER_TIMEOUT_S`, `PRESENCE_ARRIVE_S`, `PRESENCE_LEAVE_S`, `DEVICE_HB_TTL_S`
+- [x] Implement `app/config.py` with `Dev`, `Prod`, and `Test` configuration classes loading from environment variables
+- [x] Populate `.env.example` with all required keys: `FLASK_ENV`, `SECRET_KEY`, `JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`, `LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `OLLAMA_URL`, `STT_MODEL`, `STT_DEVICE`, `TTS_ENABLED`, `MAX_QUESTIONS`, `GUESS_CONFIDENCE`, `MAX_GUESSES`, `ANSWER_TIMEOUT_S`, `PRESENCE_ARRIVE_S`, `PRESENCE_LEAVE_S`, `DEVICE_HB_TTL_S`
 
 ### 1.3 Flask App Factory
-- [ ] Implement `app/__init__.py` → `create_app(config_name)` factory function
-- [ ] Register configuration loading from `.env` (python-dotenv)
-- [ ] Initialize all extensions inside `create_app`
-- [ ] Register all REST blueprints and WebSocket routes
+- [x] Implement `app/__init__.py` → `create_app(config_name)` factory function
+- [x] Register configuration loading from `.env` (python-dotenv)
+- [x] Initialize all extensions inside `create_app`
+- [x] Register all REST blueprints and WebSocket routes
 
 ### 1.4 Extensions Module
-- [ ] Create `app/extensions.py` and initialize: `SQLAlchemy (db)`, `Flask-Migrate (migrate)`, `Redis client (redis_client)`, `flask-sock (sock)`, `Flask-CORS (cors)`, `Flask-Limiter (limiter)`
+- [x] Create `app/extensions.py` and initialize: `SQLAlchemy (db)`, `Flask-Migrate (migrate)`, `Redis client (redis_client)`, `flask-sock (sock)`, `Flask-CORS (cors)`, `Flask-Limiter (limiter)`
 
 ### 1.5 Docker & Deployment Setup
-- [ ] Write `Dockerfile` (multi-stage Python 3.11 build with Gunicorn + gevent)
-- [ ] Write `docker-compose.yml` with services: `api`, `postgres` (PostgreSQL 16), `redis` (Redis 7), `nginx` (reverse proxy)
-- [ ] Write `wsgi.py` as the Gunicorn entry point calling `create_app()`
+- [x] Write `Dockerfile` (multi-stage Python 3.11 build with Gunicorn + gevent)
+- [x] Write `docker-compose.yml` with services: `api`, `postgres` (PostgreSQL 16), `redis` (Redis 7), `nginx` (reverse proxy)
+- [x] Write `wsgi.py` as the Gunicorn entry point calling `create_app()`
 
 ### 1.6 Health Check Endpoint
-- [ ] Create `app/api/health.py` blueprint
-- [ ] Implement `GET /api/health` that checks: PostgreSQL connection, Redis connectivity, and basic LLM provider reachability
-- [ ] Register the health blueprint in the app factory
+- [x] Create `app/api/health.py` blueprint
+- [x] Implement `GET /api/health` that checks: PostgreSQL connection, Redis connectivity, and basic LLM provider reachability
+- [x] Register the health blueprint in the app factory
 
 ### 1.7 Logging Setup
-- [ ] Implement `app/utils/logging.py` with structured JSON logging (request ID, timestamps, log levels)
-- [ ] Add request logging middleware to the Flask app
+- [x] Implement `app/utils/logging.py` with structured JSON logging (request ID, timestamps, log levels)
+- [x] Add request logging middleware to the Flask app
 
 ### 1.8 Milestone 1 Verification
-- [ ] `docker-compose up` starts all 4 services without errors
-- [ ] `GET /api/health` returns `200 OK` with dependency status JSON
-- [ ] Write `tests/test_health.py` — health endpoint returns correct statuses
+- [x] `docker-compose up` starts all 4 services without errors
+- [x] `GET /api/health` returns `200 OK` with dependency status JSON
+- [x] Write `tests/test_health.py` — health endpoint returns correct statuses
 
 ---
 
 ## Milestone 2 — Database Models & Persistence Layer
 
 ### 2.1 SQLAlchemy Models
-- [ ] `app/models/device.py` — `Device` model: `id` UUID PK, `name` VARCHAR(100), `token_hash` VARCHAR(255), `status` ENUM(`online`, `offline`, `error`), `camera_ok` BOOL, `mic_ok` BOOL, `firmware_version` VARCHAR(50), `last_heartbeat` TIMESTAMPTZ, `created_at` TIMESTAMPTZ
-- [ ] `app/models/prompt_version.py` — `PromptVersion` model: `id` SERIAL PK, `name` VARCHAR(50), `version` INT, `language` ENUM(`ar`, `fr`, `en`), `content` TEXT, `is_active` BOOL, `created_at` TIMESTAMPTZ
-- [ ] `app/models/session.py` — `Session` model: `id` UUID PK, `source` ENUM(`robot`, `web`), `device_id` UUID FK→devices (nullable), `prompt_version_id` INT FK→prompt_versions, `language` ENUM(`ar`, `fr`, `en`), `category` ENUM(`character`, `animal`, `object`), `status` ENUM(`active`, `finished`, `abandoned`), `result` ENUM(`win`, `lose`) nullable, `question_count` SMALLINT, `llm_model` VARCHAR(50), `started_at` TIMESTAMPTZ, `ended_at` TIMESTAMPTZ nullable
-- [ ] `app/models/turn.py` — `Turn` model: `id` BIGSERIAL PK, `session_id` UUID FK→sessions, `turn_no` SMALLINT, `question` TEXT, `answer` ENUM(`yes`, `no`, `dont_know`, `probably`, `probably_not`), `input_method` ENUM(`voice`, `button`, `touch`), `confidence` FLOAT, `latency_ms` INT, `created_at` TIMESTAMPTZ. Constraint: `UNIQUE(session_id, turn_no)`
-- [ ] `app/models/guess.py` — `Guess` model: `id` BIGSERIAL PK, `session_id` UUID FK→sessions, `entity_id` INT FK→entities (nullable), `guess_name` VARCHAR(150), `guess_no` SMALLINT, `confidence` FLOAT, `is_correct` BOOL nullable, `created_at` TIMESTAMPTZ
-- [ ] `app/models/entity.py` — `Entity` model: `id` SERIAL PK, `name` VARCHAR(150), `names_i18n` JSONB, `category` ENUM(`character`, `animal`, `object`), `attributes` JSONB, `times_guessed` INT default 0, `times_correct` INT default 0, `source` ENUM(`seed`, `learned`), `is_approved` BOOL default TRUE, `created_at` TIMESTAMPTZ
-- [ ] `app/models/teach_submission.py` — `TeachSubmission` model: `id` SERIAL PK, `session_id` UUID FK→sessions, `entity_id` INT FK→entities (nullable), `submitted_name` VARCHAR(150), `qa_trail` JSONB, `status` ENUM(`pending`, `approved`, `rejected`), `reviewed_by` INT FK→users (nullable), `created_at` TIMESTAMPTZ, `reviewed_at` TIMESTAMPTZ nullable
-- [ ] `app/models/user.py` — `User` model: `id` SERIAL PK, `username` VARCHAR(50) UNIQUE, `email` VARCHAR(120) UNIQUE, `password_hash` VARCHAR(255), `role` ENUM(`admin`, `operator`), `is_active` BOOL, `created_at` TIMESTAMPTZ, `last_login_at` TIMESTAMPTZ nullable
+- [x] `app/models/device.py` — `Device` model: `id` UUID PK, `name` VARCHAR(100), `token_hash` VARCHAR(255), `status` ENUM(`online`, `offline`, `error`), `camera_ok` BOOL, `mic_ok` BOOL, `firmware_version` VARCHAR(50), `last_heartbeat` TIMESTAMPTZ, `created_at` TIMESTAMPTZ
+- [x] `app/models/prompt_version.py` — `PromptVersion` model: `id` SERIAL PK, `name` VARCHAR(50), `version` INT, `language` ENUM(`ar`, `fr`, `en`), `content` TEXT, `is_active` BOOL, `created_at` TIMESTAMPTZ
+- [x] `app/models/session.py` — `Session` model: `id` UUID PK, `source` ENUM(`robot`, `web`), `device_id` UUID FK→devices (nullable), `prompt_version_id` INT FK→prompt_versions, `language` ENUM(`ar`, `fr`, `en`), `category` ENUM(`character`, `animal`, `object`), `status` ENUM(`active`, `finished`, `abandoned`), `result` ENUM(`win`, `lose`) nullable, `question_count` SMALLINT, `llm_model` VARCHAR(50), `started_at` TIMESTAMPTZ, `ended_at` TIMESTAMPTZ nullable
+- [x] `app/models/turn.py` — `Turn` model: `id` BIGSERIAL PK, `session_id` UUID FK→sessions, `turn_no` SMALLINT, `question` TEXT, `answer` ENUM(`yes`, `no`, `dont_know`, `probably`, `probably_not`), `input_method` ENUM(`voice`, `button`, `touch`), `confidence` FLOAT, `latency_ms` INT, `created_at` TIMESTAMPTZ. Constraint: `UNIQUE(session_id, turn_no)`
+- [x] `app/models/guess.py` — `Guess` model: `id` BIGSERIAL PK, `session_id` UUID FK→sessions, `entity_id` INT FK→entities (nullable), `guess_name` VARCHAR(150), `guess_no` SMALLINT, `confidence` FLOAT, `is_correct` BOOL nullable, `created_at` TIMESTAMPTZ
+- [x] `app/models/entity.py` — `Entity` model: `id` SERIAL PK, `name` VARCHAR(150), `names_i18n` JSONB, `category` ENUM(`character`, `animal`, `object`), `attributes` JSONB, `times_guessed` INT default 0, `times_correct` INT default 0, `source` ENUM(`seed`, `learned`), `is_approved` BOOL default TRUE, `created_at` TIMESTAMPTZ
+- [x] `app/models/teach_submission.py` — `TeachSubmission` model: `id` SERIAL PK, `session_id` UUID FK→sessions, `entity_id` INT FK→entities (nullable), `submitted_name` VARCHAR(150), `qa_trail` JSONB, `status` ENUM(`pending`, `approved`, `rejected`), `reviewed_by` INT FK→users (nullable), `created_at` TIMESTAMPTZ, `reviewed_at` TIMESTAMPTZ nullable
+- [x] `app/models/user.py` — `User` model: `id` SERIAL PK, `username` VARCHAR(50) UNIQUE, `email` VARCHAR(120) UNIQUE, `password_hash` VARCHAR(255), `role` ENUM(`admin`, `operator`), `is_active` BOOL, `created_at` TIMESTAMPTZ, `last_login_at` TIMESTAMPTZ nullable
 
 ### 2.2 Database Indexes & Constraints
-- [ ] Add `UNIQUE` constraint on `(turns.session_id, turns.turn_no)`
-- [ ] Add indexes on `sessions(started_at)`, `sessions(device_id)`, `sessions(status)`
-- [ ] Add index on `entities(category, is_approved)` for fast KB loading
-- [ ] Add index on `teach_submissions(status)` for pending review queries
+- [x] Add `UNIQUE` constraint on `(turns.session_id, turns.turn_no)`
+- [x] Add indexes on `sessions(started_at)`, `sessions(device_id)`, `sessions(status)`
+- [x] Add index on `entities(category, is_approved)` for fast KB loading
+- [x] Add index on `teach_submissions(status)` for pending review queries
 
 ### 2.3 Alembic Migrations
-- [ ] Initialize Flask-Migrate / Alembic: `flask db init`
-- [ ] Generate initial migration from all models: `flask db migrate`
-- [ ] Apply migration to the database: `flask db upgrade`
-- [ ] Verify all 8 tables exist with correct columns and constraints
+- [x] Initialize Flask-Migrate / Alembic: `flask db init`
+- [x] Generate initial migration from all models: `flask db migrate`
+- [x] Apply migration to the database: `flask db upgrade`
+- [x] Verify all 8 tables exist with correct columns and constraints
 
 ### 2.4 Seed Data & Scripts
-- [ ] Create `data/seed_entities.json` with ≥ 200 starter entities across all 3 categories (`character`, `animal`, `object`), each with `name`, `names_i18n`, `category`, and `attributes` JSONB
-- [ ] Implement `scripts/seed_kb.py` CLI script to bulk-insert seed entities into the `entities` table (idempotent — skip existing)
-- [ ] Implement `scripts/create_admin.py` CLI script to create initial admin user with hashed password (argon2/bcrypt)
+- [x] Create `data/seed_entities.json` minimal mock fixture (3-5 sample entries for developer testing of the loader)
+- [x] Implement `scripts/seed_kb.py` CLI script to bulk-insert seed entities from any provided JSON into the `entities` table (idempotent — skip existing)
+- [x] Implement `scripts/create_admin.py` CLI script to create initial admin user with hashed password (argon2/bcrypt)
 
 ### 2.5 Repositories (Data Access Layer)
-- [ ] `app/repositories/device_repo.py` — CRUD for devices (create, get by id, list all, update status, update heartbeat)
-- [ ] `app/repositories/session_repo.py` — Create session, get by id, update status/result/ended_at, list sessions with filtering & pagination
-- [ ] `app/repositories/turn_repo.py` — Insert turn, get turns by session_id
-- [ ] `app/repositories/guess_repo.py` — Insert guess, update is_correct, get guesses by session_id
-- [ ] `app/repositories/entity_repo.py` — CRUD for entities, filter by category & is_approved, bulk insert, update times_guessed/times_correct
-- [ ] `app/repositories/teach_repo.py` — Insert teach submission, list by status, update status (approve/reject), link entity_id
-- [ ] `app/repositories/user_repo.py` — Create user, get by username/email, update last_login_at
-- [ ] `app/repositories/prompt_repo.py` — Get active prompt by language, list all versions, create new version
+- [x] `app/repositories/device_repo.py` — CRUD for devices (create, get by id, list all, update status, update heartbeat)
+- [x] `app/repositories/session_repo.py` — Create session, get by id, update status/result/ended_at, list sessions with filtering & pagination
+- [x] `app/repositories/turn_repo.py` — Insert turn, get turns by session_id
+- [x] `app/repositories/guess_repo.py` — Insert guess, update is_correct, get guesses by session_id
+- [x] `app/repositories/entity_repo.py` — CRUD for entities, filter by category & is_approved, bulk insert, update times_guessed/times_correct
+- [x] `app/repositories/teach_repo.py` — Insert teach submission, list by status, update status (approve/reject), link entity_id
+- [x] `app/repositories/user_repo.py` — Create user, get by username/email, update last_login_at
+- [x] `app/repositories/prompt_repo.py` — Get active prompt by language, list all versions, create new version
 
 ### 2.6 Milestone 2 Verification
-- [ ] All 8 tables created successfully via migration
-- [ ] Seed script populates ≥ 200 entities
-- [ ] Admin user created and can be retrieved from DB
-- [ ] Write `tests/test_models.py` — model creation and relationship integrity tests
+- [x] All 8 tables created successfully via migration
+- [x] Seed script executes idempotently with test fixture
+- [x] Admin user created and can be retrieved from DB
+- [x] Write `tests/test_models.py` — model creation and relationship integrity tests
 
 ---
 

@@ -15,6 +15,10 @@ from __future__ import annotations
 
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Ensure .env is loaded before class attributes are evaluated
+load_dotenv()
 
 
 def _bool(key: str, default: bool = False) -> bool:
@@ -49,7 +53,7 @@ class Base:
     # ── Database (SQLAlchemy) ─────────────────────────────────────────────────
     SQLALCHEMY_DATABASE_URI: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg://akinator:akinator@localhost:5432/akinator_db",
+        "postgresql+psycopg://postgres:postgres@localhost:5432/postgres",
     )
     # Disable modification tracking (deprecated and wastes memory)
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False

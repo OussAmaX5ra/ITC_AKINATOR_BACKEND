@@ -1,0 +1,66 @@
+[
+  {
+    "name": "Alan Turing",
+    "names_i18n": {
+      "en": "Alan Turing",
+      "fr": "Alan Turing",
+      "ar": "ألان تورنغ"
+    },
+    "category": "character",
+    "attributes": {
+      "is_real": 1.0,
+      "is_alive": 0.0,
+      "is_scientist": 1.0,
+      "is_computer_scientist": 1.0,
+      "is_historical": 1.0
+    }
+  },
+  {
+    "name": "Ada Lovelace",
+    "names_i18n": {
+      "en": "Ada Lovelace",
+      "fr": "Ada Lovelace",
+      "ar": "آدا لوفلايس"
+    },
+    "category": "character",
+    "attributes": {
+      "is_real": 1.0,
+      "is_alive": 0.0,
+      "is_female": 1.0,
+      "is_mathematician": 1.0,
+      "is_programmer": 1.0,
+      "is_historical": 1.0
+    }
+  },
+  {
+    "name": "Lion",
+    "names_i18n": {
+      "en": "Lion",
+      "fr": "Lion",
+      "ar": "أسد"
+    },
+    "category": "animal",
+    "attributes": {
+      "is_mammal": 1.0,
+      "is_carnivore": 1.0,
+      "is_wild": 1.0,
+      "lives_in_africa": 1.0,
+      "has_mane": 1.0
+    }
+  },
+  {
+    "name": "Smartphone",
+    "names_i18n": {
+      "en": "Smartphone",
+      "fr": "Smartphone",
+      "ar": "هاتف ذكي"
+    },
+    "category": "object",
+    "attributes": {
+      "is_electronic": 1.0,
+      "has_screen": 1.0,
+      "portable": 1.0,
+      "connects_to_internet": 1.0
+    }
+  }
+]
