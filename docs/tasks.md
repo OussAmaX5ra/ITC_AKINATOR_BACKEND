@@ -101,19 +101,19 @@
 ## Milestone 3 — Game Engine (Knowledge-Base Mode)
 
 ### 3.1 Redis Session Store
-- [ ] Implement `app/services/game/session_store.py`
-- [ ] `create_session(session_id, category, language, device_id)` → SET `session:{id}` JSON in Redis with TTL 30 min
-- [ ] `get_session(session_id)` → parse Redis JSON to session state dict
-- [ ] `update_session(session_id, updates)` → partial update and refresh TTL
-- [ ] `delete_session(session_id)` → cleanup on game end
-- [ ] Session state schema: `{state, category, language, device_id, question_count, guesses_made, history[], excluded_entity_ids[], candidate_scores{}}`
+- [x] Implement `app/services/game/session_store.py`
+- [x] `create_session(session_id, category, language, device_id)` → SET `session:{id}` JSON in Redis with TTL 30 min
+- [x] `get_session(session_id)` → parse Redis JSON to session state dict
+- [x] `update_session(session_id, updates)` → partial update and refresh TTL
+- [x] `delete_session(session_id)` → cleanup on game end
+- [x] Session state schema: `{state, category, language, device_id, question_count, guesses_made, history[], excluded_entity_ids[], candidate_scores{}}`
 
 ### 3.2 Candidate Scoring Engine
-- [ ] Implement `app/services/game/candidates.py`
-- [ ] `load_candidates(category)` → fetch all approved entities for the given category from DB, return dict `{entity_id: 1.0}` (initial score)
-- [ ] `update_scores(candidate_scores, answer, attribute_key)` → apply scoring weights: yes +1.0, probably +0.5, dont_know 0, probably_not −0.5, no −1.0 multiplied by `match(entity.attributes[attr])`
-- [ ] `get_top_k(candidate_scores, k=10, excluded_ids=[])` → return top-K candidates sorted by score, excluding already-guessed entity IDs
-- [ ] `get_best_guess(candidate_scores, excluded_ids=[])` → return top-1 candidate with its confidence score
+- [x] Implement `app/services/game/candidates.py`
+- [x] `load_candidates(category)` → fetch all approved entities for the given category from DB, return dict `{entity_id: 1.0}` (initial score)
+- [x] `update_scores(candidate_scores, answer, attribute_key)` → apply scoring weights: yes +1.0, probably +0.5, dont_know 0, probably_not −0.5, no −1.0 multiplied by `match(entity.attributes[attr])`
+- [x] `get_top_k(candidate_scores, k=10, excluded_ids=[])` → return top-K candidates sorted by score, excluding already-guessed entity IDs
+- [x] `get_best_guess(candidate_scores, excluded_ids=[])` → return top-1 candidate with its confidence score
 
 ### 3.3 Information Gain Fallback (KB-Only Mode)
 - [ ] Implement `app/services/game/fallback.py`
