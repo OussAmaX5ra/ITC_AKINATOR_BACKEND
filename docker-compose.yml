@@ -48,6 +48,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
     ports:
       - "5000:5000"
+    command: sh -c "flask db upgrade && gunicorn -w 4 -k gevent -b 0.0.0.0:5000 --timeout 120 wsgi:app"
     depends_on:
       postgres:
         condition: service_healthy
