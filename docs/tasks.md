@@ -170,11 +170,11 @@
 - [x] `verify_device_token(token, hash)` → bool
 
 ### 4.2 Auth Blueprint
-- [ ] Create `app/api/auth.py` blueprint
-- [ ] `POST /api/auth/login` — accept `{username, password}`, verify credentials, return `{access_token, refresh_token, user}`
-- [ ] `POST /api/auth/refresh` — accept refresh token, return new access token
-- [ ] JWT middleware decorator `@jwt_required` for protecting admin routes
-- [ ] JWT middleware decorator `@role_required(role)` for role-based access control
+- [x] Create `app/api/auth.py` blueprint
+- [x] `POST /api/auth/login` — accept `{username, password}`, verify credentials, return `{access_token, refresh_token, user}`
+- [x] `POST /api/auth/refresh` — accept refresh token, return new access token
+- [x] JWT middleware decorator `@jwt_required` for protecting admin routes
+- [x] JWT middleware decorator `@role_required(role)` for role-based access control
 
 ### 4.3 Device Management Blueprint
 - [ ] Create `app/api/devices.py` blueprint

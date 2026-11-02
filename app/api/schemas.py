@@ -85,6 +85,34 @@ class TeachRequest(BaseModel):
     )
 
 
+class LoginRequest(BaseModel):
+    """Payload for operator/admin login (POST /api/auth/login)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    username: str = Field(
+        min_length=1,
+        max_length=120,
+        description="Username or email address of the account.",
+    )
+    password: str = Field(
+        min_length=1,
+        max_length=255,
+        description="Plaintext password for authentication.",
+    )
+
+
+class RefreshTokenRequest(BaseModel):
+    """Payload for refreshing an expired access token (POST /api/auth/refresh)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    refresh_token: Optional[str] = Field(
+        default=None,
+        description="Refresh token (can alternatively be passed via Authorization Bearer header).",
+    )
+
+
 # ── Response Schemas ──────────────────────────────────────────────────────────
 
 
@@ -140,3 +168,37 @@ class TeachResponse(BaseModel):
     status: str
     message: str
     submission_id: Optional[int] = None
+
+
+class UserResponse(BaseModel):
+    """User profile data returned in auth/admin endpoints."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    username: str
+    email: str
+    role: str
+    is_active: bool
+    created_at: Optional[str] = None
+    last_login_at: Optional[str] = None
+
+
+class LoginResponse(BaseModel):
+    """Payload returned upon successful authentication."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "Bearer"
+    user: UserResponse
+
+
+class RefreshResponse(BaseModel):
+    """Payload returned upon successful token refresh."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    access_token: str
+    token_type: str = "Bearer"
