@@ -116,44 +116,44 @@
 - [x] `get_best_guess(candidate_scores, excluded_ids=[])` → return top-1 candidate with its confidence score
 
 ### 3.3 Information Gain Fallback (KB-Only Mode)
-- [ ] Implement `app/services/game/fallback.py`
-- [ ] `compute_entropy(candidate_scores)` → H(C) = −Σ P(c) log₂ P(c)
-- [ ] `compute_information_gain(question_attr, candidates)` → IG(q) = H(C) − Σₐ P(a|q) H(C|a,q)
-- [ ] `select_best_question(candidates, asked_attributes)` → return attribute with highest IG, excluding already-asked attributes
-- [ ] `generate_question_text(attribute_key, language)` → map attribute key to a natural-language yes/no question in the correct language
+- [x] Implement `app/services/game/fallback.py`
+- [x] `compute_entropy(candidate_scores)` → H(C) = −Σ P(c) log₂ P(c)
+- [x] `compute_information_gain(question_attr, candidates)` → IG(q) = H(C) − Σₐ P(a|q) H(C|a,q)
+- [x] `select_best_question(candidates, asked_attributes)` → return attribute with highest IG, excluding already-asked attributes
+- [x] `generate_question_text(attribute_key, language)` → map attribute key to a natural-language yes/no question in the correct language
 
 ### 3.4 Game Engine Orchestrator
-- [ ] Implement `app/services/game/engine.py`
-- [ ] `start_game(category, language, source, device_id=None)` → create DB session, create Redis session state, load candidates, return session_id
-- [ ] `process_answer(session_id, answer, input_method)` → update candidate scores, increment turn count, insert Turn record in DB, check termination criteria
-- [ ] `get_next_action(session_id)` → returns `{action: "ask", question, confidence}` or `{action: "guess", guess_name, entity_id, confidence}` based on current state
-- [ ] `submit_verdict(session_id, is_correct)` → update Guess record, handle win/lose/continue logic
-- [ ] `submit_teach(session_id, correct_name)` → insert TeachSubmission with full Q&A trail from Redis history
-- [ ] `abandon_session(session_id)` → mark session as abandoned in DB, delete Redis key
-- [ ] Implement termination criteria: confidence ≥ 0.85 → guess; turn_count == MAX_QUESTIONS → forced guess; guesses_made ≥ MAX_GUESSES → lose & teach
-- [ ] Emit `thinking` state immediately upon receiving an answer (before processing)
+- [x] Implement `app/services/game/engine.py`
+- [x] `start_game(category, language, source, device_id=None)` → create DB session, create Redis session state, load candidates, return session_id
+- [x] `process_answer(session_id, answer, input_method)` → update candidate scores, increment turn count, insert Turn record in DB, check termination criteria
+- [x] `get_next_action(session_id)` → returns `{action: "ask", question, confidence}` or `{action: "guess", guess_name, entity_id, confidence}` based on current state
+- [x] `submit_verdict(session_id, is_correct)` → update Guess record, handle win/lose/continue logic
+- [x] `submit_teach(session_id, correct_name)` → insert TeachSubmission with full Q&A trail from Redis history
+- [x] `abandon_session(session_id)` → mark session as abandoned in DB, delete Redis key
+- [x] Implement termination criteria: confidence ≥ 0.85 → guess; turn_count == MAX_QUESTIONS → forced guess; guesses_made ≥ MAX_GUESSES → lose & teach
+- [x] Emit `thinking` state immediately upon receiving an answer (before processing)
 
 ### 3.5 Game REST API Endpoints
-- [ ] Create `app/api/games.py` blueprint
-- [ ] `POST /api/games` — start a new game session: accept `{category, language}`, return `{session_id, first_question}`
-- [ ] `POST /api/games/{session_id}/answer` — submit an answer: accept `{answer, input_method}`, return next action (question or guess)
-- [ ] `POST /api/games/{session_id}/verdict` — submit guess verdict: accept `{is_correct}`, return outcome (win, continue, or teach prompt)
-- [ ] `POST /api/games/{session_id}/teach` — submit correct name on defeat: accept `{correct_name}`, return confirmation
-- [ ] Register games blueprint in the app factory
+- [x] Create `app/api/games.py` blueprint
+- [x] `POST /api/games` — start a new game session: accept `{category, language}`, return `{session_id, first_question}`
+- [x] `POST /api/games/{session_id}/answer` — submit an answer: accept `{answer, input_method}`, return next action (question or guess)
+- [x] `POST /api/games/{session_id}/verdict` — submit guess verdict: accept `{is_correct}`, return outcome (win, continue, or teach prompt)
+- [x] `POST /api/games/{session_id}/teach` — submit correct name on defeat: accept `{correct_name}`, return confirmation
+- [x] Register games blueprint in the app factory
 
 ### 3.6 Pydantic Request/Response Schemas
-- [ ] Create `app/api/schemas.py`
-- [ ] `StartGameRequest` — validate `category` (enum), `language` (enum)
-- [ ] `SubmitAnswerRequest` — validate `answer` (enum of 5 values), `input_method` (enum)
-- [ ] `SubmitVerdictRequest` — validate `is_correct` (bool)
-- [ ] `TeachRequest` — validate `correct_name` (non-empty string)
-- [ ] Response schemas for: `GameStartedResponse`, `TurnResponse`, `VerdictResponse`, `TeachResponse`
+- [x] Create `app/api/schemas.py`
+- [x] `StartGameRequest` — validate `category` (enum), `language` (enum)
+- [x] `SubmitAnswerRequest` — validate `answer` (enum of 5 values), `input_method` (enum)
+- [x] `SubmitVerdictRequest` — validate `is_correct` (bool)
+- [x] `TeachRequest` — validate `correct_name` (non-empty string)
+- [x] Response schemas for: `GameStartedResponse`, `TurnResponse`, `VerdictResponse`, `TeachResponse`
 
 ### 3.7 Milestone 3 Verification
-- [ ] A full game loop can be played via REST (curl / Postman): start → answer 5–20 questions → receive guess → verdict → teach if lost
-- [ ] Redis session state is correctly created, updated, and deleted
-- [ ] All turns and guesses are persisted to PostgreSQL
-- [ ] Write `tests/test_engine.py` — unit tests for candidate scoring, IG calculation, termination criteria, and state transitions
+- [x] A full game loop can be played via REST (curl / Postman): start → answer 5–20 questions → receive guess → verdict → teach if lost
+- [x] Redis session state is correctly created, updated, and deleted
+- [x] All turns and guesses are persisted to PostgreSQL
+- [x] Write `tests/test_engine.py` — unit tests for candidate scoring, IG calculation, termination criteria, and state transitions
 
 ---
 
