@@ -73,12 +73,18 @@ class EntityRepository:
         return list(db.session.scalars(query).all())
 
     @staticmethod
-    def count_entities(category: Optional[EntityCategory] = None, is_approved: Optional[bool] = None) -> int:
+    def count_entities(
+        category: Optional[EntityCategory] = None,
+        is_approved: Optional[bool] = None,
+        search: Optional[str] = None,
+    ) -> int:
         query = db.select(db.func.count(Entity.id))
         if category is not None:
             query = query.filter_by(category=category)
         if is_approved is not None:
             query = query.filter_by(is_approved=is_approved)
+        if search:
+            query = query.filter(Entity.name.ilike(f"%{search}%"))
         return db.session.scalar(query) or 0
 
     @staticmethod

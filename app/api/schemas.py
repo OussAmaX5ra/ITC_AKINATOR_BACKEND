@@ -113,6 +113,100 @@ class RefreshTokenRequest(BaseModel):
     )
 
 
+class RegisterDeviceRequest(BaseModel):
+    """Payload for registering a new robot device (POST /api/devices/register)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Display name for robot hardware.",
+    )
+    firmware_version: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Initial firmware version string.",
+    )
+
+
+class DeviceHeartbeatRequest(BaseModel):
+    """Payload for robot heartbeat telemetry (POST /api/devices/{id}/heartbeat)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    camera_ok: Optional[bool] = Field(
+        default=None,
+        description="Camera operational status flag.",
+    )
+    mic_ok: Optional[bool] = Field(
+        default=None,
+        description="Microphone operational status flag.",
+    )
+    firmware_version: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Reported firmware version.",
+    )
+
+
+class CreateEntityRequest(BaseModel):
+    """Payload for creating a new knowledge base entity (POST /api/entities)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(
+        min_length=1,
+        max_length=150,
+        description="Entity canonical name.",
+    )
+    category: EntityCategory = Field(
+        default=EntityCategory.CHARACTER,
+        description="Entity category (character, animal, object).",
+    )
+    names_i18n: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Localized entity names map (e.g. {'en': '...', 'fr': '...', 'ar': '...'}).",
+    )
+    attributes: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Attribute probabilities dictionary (attribute_key -> score in [-1.0, 1.0]).",
+    )
+    is_approved: bool = Field(
+        default=True,
+        description="Whether the entity is active and approved for gameplay.",
+    )
+
+
+class UpdateEntityRequest(BaseModel):
+    """Payload for updating an existing knowledge base entity (PUT /api/entities/{id})."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=150,
+        description="Entity canonical name.",
+    )
+    category: Optional[EntityCategory] = Field(
+        default=None,
+        description="Entity category.",
+    )
+    names_i18n: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Localized entity names map.",
+    )
+    attributes: Optional[Dict[str, float]] = Field(
+        default=None,
+        description="Attribute probabilities dictionary.",
+    )
+    is_approved: Optional[bool] = Field(
+        default=None,
+        description="Approval / active status.",
+    )
+
+
 # ── Response Schemas ──────────────────────────────────────────────────────────
 
 
@@ -202,3 +296,87 @@ class RefreshResponse(BaseModel):
 
     access_token: str
     token_type: str = "Bearer"
+
+
+class RegisterDeviceResponse(BaseModel):
+    """Payload returned when a new device is registered."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    device_id: str
+    name: str
+    device_token: str
+    status: str
+    created_at: Optional[str] = None
+
+
+class DeviceItemResponse(BaseModel):
+    """Device details including live Redis online status."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    status: str
+    camera_ok: bool
+    mic_ok: bool
+    firmware_version: Optional[str] = None
+    last_heartbeat: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class DeviceListResponse(BaseModel):
+    """List of all registered devices with online telemetry."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    devices: List[DeviceItemResponse]
+    total: int
+
+
+class DeviceHeartbeatResponse(BaseModel):
+    """Response payload returned after recording a heartbeat."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    status: str
+    device_id: str
+    last_heartbeat: Optional[str] = None
+
+
+class EntityResponse(BaseModel):
+    """Entity representation returned by the API."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    category: str
+    names_i18n: Dict[str, str] = Field(default_factory=dict)
+    attributes: Dict[str, float] = Field(default_factory=dict)
+    times_guessed: int
+    times_correct: int
+    source: str
+    is_approved: bool
+    created_at: Optional[str] = None
+
+
+class EntityListResponse(BaseModel):
+    """Paginated list of entities."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    entities: List[EntityResponse]
+    total: int
+    page: int
+    limit: int
+
+
+class BulkSeedResponse(BaseModel):
+    """Result of bulk seed operation."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    status: str
+    imported_count: int
+    message: str

@@ -177,19 +177,19 @@
 - [x] JWT middleware decorator `@role_required(role)` for role-based access control
 
 ### 4.3 Device Management Blueprint
-- [ ] Create `app/api/devices.py` blueprint
-- [ ] `POST /api/devices/register` — accept `{name}`, create device record, return `{device_id, device_token}` (token shown once)
-- [ ] `GET /api/devices` — list all devices with current online status (check Redis heartbeat TTL)
-- [ ] `POST /api/devices/{id}/heartbeat` — HTTP heartbeat fallback, update Redis TTL key
-- [ ] Protect with `@jwt_required` (admin only)
+- [x] Create `app/api/devices.py` blueprint
+- [x] `POST /api/devices/register` — accept `{name}`, create device record, return `{device_id, device_token}` (token shown once)
+- [x] `GET /api/devices` — list all devices with current online status (check Redis heartbeat TTL)
+- [x] `POST /api/devices/{id}/heartbeat` — HTTP heartbeat fallback, update Redis TTL key
+- [x] Protect with `@jwt_required` (admin only)
 
 ### 4.4 Entity Management Blueprint
-- [ ] Create `app/api/entities.py` blueprint
-- [ ] `GET /api/entities` — paginated list with filters: `category`, `is_approved`, `search` (name)
-- [ ] `POST /api/entities` — create new entity (admin only)
-- [ ] `PUT /api/entities/{id}` — update entity name, names_i18n, attributes (admin only)
-- [ ] `DELETE /api/entities/{id}` — soft delete / mark unapproved (admin only)
-- [ ] `POST /api/entities/seed` — bulk import from uploaded JSON/CSV file (admin only)
+- [x] Create `app/api/entities.py` blueprint
+- [x] `GET /api/entities` — paginated list with filters: `category`, `is_approved`, `search` (name)
+- [x] `POST /api/entities` — create new entity (admin only)
+- [x] `PUT /api/entities/{id}` — update entity name, names_i18n, attributes (admin only)
+- [x] `DELETE /api/entities/{id}` — soft delete / mark unapproved (admin only)
+- [x] `POST /api/entities/seed` — bulk import from uploaded JSON/CSV file (admin only)
 
 ### 4.5 Admin Dashboard API
 - [ ] Create `app/api/admin.py` blueprint
