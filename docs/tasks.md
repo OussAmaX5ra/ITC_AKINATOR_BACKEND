@@ -157,182 +157,33 @@
 
 ---
 
-## Milestone 4 — LLM Integration
+## Milestone 4 — Admin API, Auth & Live Monitoring
 
-### 4.1 Versioned Prompt System
-- [ ] Implement `app/services/game/prompts.py`
-- [ ] `load_prompt(language, version=None)` → load from `prompt_versions` table (active version) or fall back to file `prompts/v1/system_{lang}.txt`
-- [ ] Create `prompts/v1/system_en.txt` — English system prompt instructing the LLM to play Akinator, output strict JSON, stay family-friendly
-- [ ] Create `prompts/v1/system_fr.txt` — French system prompt (same structure)
-- [ ] Create `prompts/v1/system_ar.txt` — Arabic/Darija system prompt (same structure)
-- [ ] Prompt template includes: game rules, current Q&A history, top-K candidates with attributes, excluded guesses, expected JSON output schema
+### 4.1 Security Utilities
+- [x] Implement `app/utils/security.py`
+- [x] `hash_password(plaintext)` → argon2 or bcrypt hash
+- [x] `verify_password(plaintext, hash)` → bool
+- [x] `generate_jwt(user_id, role)` → signed JWT token with expiration
+- [x] `decode_jwt(token)` → return payload or raise `Unauthorized`
+- [x] `generate_device_token()` → cryptographically random token
+- [x] `hash_device_token(token)` → SHA-256 hash for storage
+- [x] `verify_device_token(token, hash)` → bool
 
-### 4.2 LLM Provider Adapter
-- [ ] Implement `app/services/game/llm_client.py`
-- [ ] Abstract `LLMClient` base class with `generate(system_prompt, user_message) → str`
-- [ ] `AnthropicAdapter` — Claude API integration
-- [ ] `OpenAIAdapter` — GPT API integration
-- [ ] `GeminiAdapter` — Google Gemini API integration
-- [ ] `OllamaAdapter` — local Ollama HTTP API integration (Llama 3.1 8B / Qwen 2.5 7B)
-- [ ] Factory function `get_llm_client(provider=config.LLM_PROVIDER)` → returns correct adapter
-- [ ] All adapters enforce `temperature`, `max_tokens`, and `response_format` (JSON mode where supported)
-
-### 4.3 JSON Output Validation & Retry
-- [ ] Implement `app/services/game/validator.py`
-- [ ] Define expected JSON schema: `{action: "ask"|"guess", question: str|null, guess: str|null, confidence: float}`
-- [ ] `validate_llm_response(raw_text)` → parse JSON, validate against schema, return typed dict or raise `ValidationError`
-- [ ] Retry logic: on validation failure, send 1 retry prompt with the error message appended. On second failure, raise `LLMFallbackError`
-
-### 4.4 Integrate LLM into Game Engine
-- [ ] Update `engine.py` → `get_next_action()` to call LLM provider with formatted context (history + candidates + prompt)
-- [ ] On successful LLM response: use its `action`, `question`, and `confidence`
-- [ ] On `LLMFallbackError`: automatically switch to KB-only fallback (`fallback.py`) for that turn
-- [ ] Log LLM latency per call to `turns.latency_ms`
-- [ ] Record `llm_model` used in `sessions.llm_model`
-
-### 4.5 Milestone 4 Verification
-- [ ] Play a full game via REST with LLM generating questions (test with at least one cloud provider and Ollama)
-- [ ] Malformed LLM output triggers retry and then graceful fallback
-- [ ] Switching `LLM_PROVIDER` env var changes the adapter used
-- [ ] Write `tests/test_llm_client.py` — mock adapter tests, validation tests, retry & fallback tests
-
----
-
-## Milestone 5 — WebSocket Gateway
-
-### 5.1 WebSocket Protocol Layer
-- [ ] Implement `app/ws/protocol.py`
-- [ ] `parse_envelope(raw_message)` → decode JSON envelope `{type, session_id, seq, payload}`
-- [ ] `build_envelope(msg_type, session_id, payload)` → serialize JSON envelope with server-side seq
-- [ ] `parse_binary_frame(data)` → extract 1-byte header (0x01 JPEG, 0x02 PCM, 0x03 TTS) and payload bytes
-- [ ] `build_binary_frame(frame_type, payload)` → prepend header byte to binary data
-- [ ] Sequence number tracking: maintain per-connection `last_seq` to deduplicate messages after reconnect
-
-### 5.2 Robot WebSocket Handler
-- [ ] Implement `app/ws/robot.py`
-- [ ] `/ws/robot` route using `flask-sock`
-- [ ] Authenticate via device token in the first message or query parameter
-- [ ] Handle incoming binary 0x01 (JPEG) → dispatch to vision service
-- [ ] Handle incoming binary 0x02 (PCM audio) → buffer and dispatch to speech service
-- [ ] Handle incoming JSON messages: `heartbeat`, `start`, `button` (answer), `verdict`, `teach`
-- [ ] Send outgoing JSON: `session_started`, `question`, `guess`, `result`, `listening`, `thinking`, `error`
-- [ ] Send outgoing binary 0x03 (TTS audio) from Piper
-- [ ] Handle connection close: if game active, start abandon timer
-- [ ] Implement close codes: `4001` unauthorized, `4008` rate limit, `4010` replaced connection
-
-### 5.3 Player WebSocket Handler
-- [ ] Implement `app/ws/player.py`
-- [ ] `/ws/player` route using `flask-sock`
-- [ ] Authenticate via session token (generated on game start)
-- [ ] Handle incoming JSON: `start`, `answer`, `verdict`, `teach`
-- [ ] Send outgoing JSON: `session_started`, `question`, `guess`, `result`, `thinking`, `error`
-- [ ] Optional: accept binary 0x01 (webcam JPEG) and 0x02 (mic audio) for web-based play
-
-### 5.4 Admin WebSocket Handler
-- [ ] Implement `app/ws/admin.py`
-- [ ] `/ws/admin` route using `flask-sock`
-- [ ] Authenticate via JWT token
-- [ ] Handle incoming JSON: `subscribe {device_id | session_id}`
-- [ ] Send outgoing events: `robot_status` (online/offline/camera/mic), `session_update` (state changes), `turn` (live Q&A), `frame_preview` (JPEG + face bounding boxes), `stats_tick` (counters)
-- [ ] Powered by Redis Pub/Sub subscription to `admin:live_stream` channel
-
-### 5.5 WebSocket Registration
-- [ ] Register all 3 WebSocket routes in the app factory via `flask-sock`
-- [ ] Ensure Gunicorn gevent/gthread workers support concurrent WebSocket connections
-
-### 5.6 Milestone 5 Verification
-- [ ] Robot WebSocket: connect with device token, send JPEG frame, receive face detection event
-- [ ] Player WebSocket: start game, exchange Q&A over WS, receive guess
-- [ ] Admin WebSocket: subscribe to a device, receive live turn events
-- [ ] Reconnection: disconnect and reconnect with same seq, verify no duplicate processing
-- [ ] Write `tests/test_protocol.py` — envelope parsing, binary frame parsing, seq deduplication
-
----
-
-## Milestone 6 — Vision & Speech Services
-
-### 6.1 Face Detection Service
-- [ ] Implement `app/services/vision/detector.py`
-- [ ] Initialize MediaPipe Face Detection (or YOLOv8-face) model on app startup
-- [ ] `detect_faces(jpeg_bytes)` → decode JPEG, run face detection, return list of `{bbox, area, confidence}`
-- [ ] `get_largest_face(faces)` → return the face with the largest bounding box area (= active player)
-- [ ] Ensure frames are processed in-memory only — **zero disk writes**
-
-### 6.2 Presence State Tracker
-- [ ] Implement `app/services/vision/presence.py`
-- [ ] Maintain per-device presence state machine: `ABSENT` → `ARRIVING` → `PRESENT` → `LEAVING` → `ABSENT`
-- [ ] `ARRIVING` → `PRESENT`: face continuously detected for > `PRESENCE_ARRIVE_S` (default 1.0s)
-- [ ] `PRESENT` → `LEAVING`: face absent for > `PRESENCE_LEAVE_S` (default 5.0s)
-- [ ] Emit events: `player_arrived`, `player_left`
-- [ ] Publish presence events to Redis Pub/Sub for admin live view
-- [ ] On `player_left` during active game: trigger session abandon after 10s total absence
-
-### 6.3 Speech-to-Text (STT)
-- [ ] Implement `app/services/speech/stt.py`
-- [ ] Load `faster-whisper` model (configurable: `small` / `medium`, device: `cuda` / `cpu`)
-- [ ] `transcribe(pcm_audio_bytes, language)` → run Whisper inference, return transcribed text string
-- [ ] Handle audio buffering: accumulate PCM chunks until end-of-utterance signal, then transcribe full utterance
-- [ ] Target latency: ≤ 1.5s for 2-second voice clips
-
-### 6.4 Answer Mapper (Multilingual)
-- [ ] Implement `app/services/speech/answer_mapper.py`
-- [ ] `map_answer(transcribed_text, language)` → return one of: `yes`, `no`, `dont_know`, `probably`, `probably_not`, or `None` (ambiguous)
-- [ ] Keyword dictionaries for each language:
-  - **English**: yes/yeah/yep/sure, no/nope/nah, don't know/no idea/not sure, probably/maybe/I think so, probably not/doubt it/I don't think so
-  - **French**: oui/ouais/bien sûr, non/pas du tout, je ne sais pas/aucune idée, peut-être/probablement, probablement pas/j'en doute
-  - **Arabic (Darija)**: na3am/wah/ih/iyeh, la/lala, ma3labalich/maranich 3aref/ma3raftch, momkin/yimkin/rab3ma, ba3id/chwiya la/ma nadonch
-- [ ] Fuzzy matching with confidence threshold for handling transcription errors
-- [ ] Return `None` when no confident match → triggers "please repeat" prompt
-
-### 6.5 Text-to-Speech (TTS)
-- [ ] Implement `app/services/speech/tts.py`
-- [ ] Initialize Piper TTS with models for supported languages
-- [ ] `synthesize(text, language)` → generate WAV/PCM audio bytes
-- [ ] `stream_to_robot(audio_bytes, ws_connection)` → send as binary 0x03 frames over WebSocket
-- [ ] Controlled by `TTS_ENABLED` env variable (can be disabled)
-
-### 6.6 Wire Vision & Speech into WebSocket Handlers
-- [ ] In `ws/robot.py`: route incoming 0x01 frames to `detector.detect_faces()` → `presence.update()`
-- [ ] In `ws/robot.py`: route incoming 0x02 audio to `stt.transcribe()` → `answer_mapper.map_answer()` → feed result into game engine
-- [ ] In `ws/robot.py`: after game engine produces a question, call `tts.synthesize()` → send 0x03 frame back
-- [ ] Ensure heavy processing (STT, vision, LLM) runs in a thread pool, never blocking the WS handler
-
-### 6.7 Milestone 6 Verification
-- [ ] Send a test JPEG to `/ws/robot` → receive `player_arrived` event after 1s of face presence
-- [ ] Send PCM audio of "yes" in English → receive correctly mapped answer
-- [ ] TTS generates and streams audio back to the WebSocket client
-- [ ] Write `tests/test_mapper.py` — unit tests for all 3 languages × 5 answer types + ambiguous inputs
-- [ ] Write `tests/test_detector.py` — face detection returns bounding boxes for test images
-
----
-
-## Milestone 7 — Admin API, Auth & Live Monitoring
-
-### 7.1 Security Utilities
-- [ ] Implement `app/utils/security.py`
-- [ ] `hash_password(plaintext)` → argon2 or bcrypt hash
-- [ ] `verify_password(plaintext, hash)` → bool
-- [ ] `generate_jwt(user_id, role)` → signed JWT token with expiration
-- [ ] `decode_jwt(token)` → return payload or raise `Unauthorized`
-- [ ] `generate_device_token()` → cryptographically random token
-- [ ] `hash_device_token(token)` → SHA-256 hash for storage
-- [ ] `verify_device_token(token, hash)` → bool
-
-### 7.2 Auth Blueprint
+### 4.2 Auth Blueprint
 - [ ] Create `app/api/auth.py` blueprint
 - [ ] `POST /api/auth/login` — accept `{username, password}`, verify credentials, return `{access_token, refresh_token, user}`
 - [ ] `POST /api/auth/refresh` — accept refresh token, return new access token
 - [ ] JWT middleware decorator `@jwt_required` for protecting admin routes
 - [ ] JWT middleware decorator `@role_required(role)` for role-based access control
 
-### 7.3 Device Management Blueprint
+### 4.3 Device Management Blueprint
 - [ ] Create `app/api/devices.py` blueprint
 - [ ] `POST /api/devices/register` — accept `{name}`, create device record, return `{device_id, device_token}` (token shown once)
 - [ ] `GET /api/devices` — list all devices with current online status (check Redis heartbeat TTL)
 - [ ] `POST /api/devices/{id}/heartbeat` — HTTP heartbeat fallback, update Redis TTL key
 - [ ] Protect with `@jwt_required` (admin only)
 
-### 7.4 Entity Management Blueprint
+### 4.4 Entity Management Blueprint
 - [ ] Create `app/api/entities.py` blueprint
 - [ ] `GET /api/entities` — paginated list with filters: `category`, `is_approved`, `search` (name)
 - [ ] `POST /api/entities` — create new entity (admin only)
@@ -340,7 +191,7 @@
 - [ ] `DELETE /api/entities/{id}` — soft delete / mark unapproved (admin only)
 - [ ] `POST /api/entities/seed` — bulk import from uploaded JSON/CSV file (admin only)
 
-### 7.5 Admin Dashboard API
+### 4.5 Admin Dashboard API
 - [ ] Create `app/api/admin.py` blueprint
 - [ ] `GET /api/admin/stats` — aggregate statistics: total games played, win rate, average question count, games per category, games per language, average STT latency, games today/this week/this month
 - [ ] `GET /api/admin/sessions` — list sessions with filters (status, source, date range, device_id), pagination
@@ -352,23 +203,172 @@
 - [ ] `POST /api/admin/prompt-versions` — create a new prompt version (set previous as inactive)
 - [ ] Protect all admin routes with `@jwt_required` and `@role_required("admin")`
 
-### 7.6 Redis Pub/Sub Live Stream
+### 4.6 Redis Pub/Sub Live Stream
 - [ ] Implement publishing in the game engine: after each turn, guess, and state change, publish event to `admin:live_stream` channel
 - [ ] Implement publishing in the device manager: heartbeat status changes, online/offline transitions
 - [ ] Implement publishing in the vision service: face detection events with bounding box data
 - [ ] In `ws/admin.py`: subscribe to `admin:live_stream`, filter events by the admin's subscribed `device_id` or `session_id`, forward matching events over the WebSocket
 
-### 7.7 CORS & Rate Limiting
+### 4.7 CORS & Rate Limiting
 - [ ] Configure Flask-CORS to allow origins for the React web app
 - [ ] Configure Flask-Limiter: rate limits on `/api/auth/login` (e.g., 5/min), `/api/games` (e.g., 10/min), global default
 
-### 7.8 Milestone 7 Verification
+### 4.8 Milestone 4 Verification
 - [ ] Admin can log in via `/api/auth/login` and receive JWT
 - [ ] Protected endpoints reject requests without valid JWT
 - [ ] Admin can list, approve, and reject teach submissions
 - [ ] Admin WebSocket receives live turn events for a subscribed session
 - [ ] Entity CRUD operations work correctly with pagination
 - [ ] Write `tests/test_api.py` — auth flow, CRUD endpoints, permissions, rate limiting
+
+---
+
+## Milestone 5 — LLM Integration
+
+### 5.1 Versioned Prompt System
+- [ ] Implement `app/services/game/prompts.py`
+- [ ] `load_prompt(language, version=None)` → load from `prompt_versions` table (active version) or fall back to file `prompts/v1/system_{lang}.txt`
+- [ ] Create `prompts/v1/system_en.txt` — English system prompt instructing the LLM to play Akinator, output strict JSON, stay family-friendly
+- [ ] Create `prompts/v1/system_fr.txt` — French system prompt (same structure)
+- [ ] Create `prompts/v1/system_ar.txt` — Arabic/Darija system prompt (same structure)
+- [ ] Prompt template includes: game rules, current Q&A history, top-K candidates with attributes, excluded guesses, expected JSON output schema
+
+### 5.2 LLM Provider Adapter
+- [ ] Implement `app/services/game/llm_client.py`
+- [ ] Abstract `LLMClient` base class with `generate(system_prompt, user_message) → str`
+- [ ] `AnthropicAdapter` — Claude API integration
+- [ ] `OpenAIAdapter` — GPT API integration
+- [ ] `GeminiAdapter` — Google Gemini API integration
+- [ ] `OllamaAdapter` — local Ollama HTTP API integration (Llama 3.1 8B / Qwen 2.5 7B)
+- [ ] Factory function `get_llm_client(provider=config.LLM_PROVIDER)` → returns correct adapter
+- [ ] All adapters enforce `temperature`, `max_tokens`, and `response_format` (JSON mode where supported)
+
+### 5.3 JSON Output Validation & Retry
+- [ ] Implement `app/services/game/validator.py`
+- [ ] Define expected JSON schema: `{action: "ask"|"guess", question: str|null, guess: str|null, confidence: float}`
+- [ ] `validate_llm_response(raw_text)` → parse JSON, validate against schema, return typed dict or raise `ValidationError`
+- [ ] Retry logic: on validation failure, send 1 retry prompt with the error message appended. On second failure, raise `LLMFallbackError`
+
+### 5.4 Integrate LLM into Game Engine
+- [ ] Update `engine.py` → `get_next_action()` to call LLM provider with formatted context (history + candidates + prompt)
+- [ ] On successful LLM response: use its `action`, `question`, and `confidence`
+- [ ] On `LLMFallbackError`: automatically switch to KB-only fallback (`fallback.py`) for that turn
+- [ ] Log LLM latency per call to `turns.latency_ms`
+- [ ] Record `llm_model` used in `sessions.llm_model`
+
+### 5.5 Milestone 5 Verification
+- [ ] Play a full game via REST with LLM generating questions (test with at least one cloud provider and Ollama)
+- [ ] Malformed LLM output triggers retry and then graceful fallback
+- [ ] Switching `LLM_PROVIDER` env var changes the adapter used
+- [ ] Write `tests/test_llm_client.py` — mock adapter tests, validation tests, retry & fallback tests
+
+---
+
+## Milestone 6 — WebSocket Gateway
+
+### 6.1 WebSocket Protocol Layer
+- [ ] Implement `app/ws/protocol.py`
+- [ ] `parse_envelope(raw_message)` → decode JSON envelope `{type, session_id, seq, payload}`
+- [ ] `build_envelope(msg_type, session_id, payload)` → serialize JSON envelope with server-side seq
+- [ ] `parse_binary_frame(data)` → extract 1-byte header (0x01 JPEG, 0x02 PCM, 0x03 TTS) and payload bytes
+- [ ] `build_binary_frame(frame_type, payload)` → prepend header byte to binary data
+- [ ] Sequence number tracking: maintain per-connection `last_seq` to deduplicate messages after reconnect
+
+### 6.2 Robot WebSocket Handler
+- [ ] Implement `app/ws/robot.py`
+- [ ] `/ws/robot` route using `flask-sock`
+- [ ] Authenticate via device token in the first message or query parameter
+- [ ] Handle incoming binary 0x01 (JPEG) → dispatch to vision service
+- [ ] Handle incoming binary 0x02 (PCM audio) → buffer and dispatch to speech service
+- [ ] Handle incoming JSON messages: `heartbeat`, `start`, `button` (answer), `verdict`, `teach`
+- [ ] Send outgoing JSON: `session_started`, `question`, `guess`, `result`, `listening`, `thinking`, `error`
+- [ ] Send outgoing binary 0x03 (TTS audio) from Piper
+- [ ] Handle connection close: if game active, start abandon timer
+- [ ] Implement close codes: `4001` unauthorized, `4008` rate limit, `4010` replaced connection
+
+### 6.3 Player WebSocket Handler
+- [ ] Implement `app/ws/player.py`
+- [ ] `/ws/player` route using `flask-sock`
+- [ ] Authenticate via session token (generated on game start)
+- [ ] Handle incoming JSON: `start`, `answer`, `verdict`, `teach`
+- [ ] Send outgoing JSON: `session_started`, `question`, `guess`, `result`, `thinking`, `error`
+- [ ] Optional: accept binary 0x01 (webcam JPEG) and 0x02 (mic audio) for web-based play
+
+### 6.4 Admin WebSocket Handler
+- [ ] Implement `app/ws/admin.py`
+- [ ] `/ws/admin` route using `flask-sock`
+- [ ] Authenticate via JWT token
+- [ ] Handle incoming JSON: `subscribe {device_id | session_id}`
+- [ ] Send outgoing events: `robot_status` (online/offline/camera/mic), `session_update` (state changes), `turn` (live Q&A), `frame_preview` (JPEG + face bounding boxes), `stats_tick` (counters)
+- [ ] Powered by Redis Pub/Sub subscription to `admin:live_stream` channel
+
+### 6.5 WebSocket Registration
+- [ ] Register all 3 WebSocket routes in the app factory via `flask-sock`
+- [ ] Ensure Gunicorn gevent/gthread workers support concurrent WebSocket connections
+
+### 6.6 Milestone 6 Verification
+- [ ] Robot WebSocket: connect with device token, send JPEG frame, receive face detection event
+- [ ] Player WebSocket: start game, exchange Q&A over WS, receive guess
+- [ ] Admin WebSocket: subscribe to a device, receive live turn events
+- [ ] Reconnection: disconnect and reconnect with same seq, verify no duplicate processing
+- [ ] Write `tests/test_protocol.py` — envelope parsing, binary frame parsing, seq deduplication
+
+---
+
+## Milestone 7 — Vision & Speech Services
+
+### 7.1 Face Detection Service
+- [ ] Implement `app/services/vision/detector.py`
+- [ ] Initialize MediaPipe Face Detection (or YOLOv8-face) model on app startup
+- [ ] `detect_faces(jpeg_bytes)` → decode JPEG, run face detection, return list of `{bbox, area, confidence}`
+- [ ] `get_largest_face(faces)` → return the face with the largest bounding box area (= active player)
+- [ ] Ensure frames are processed in-memory only — **zero disk writes**
+
+### 7.2 Presence State Tracker
+- [ ] Implement `app/services/vision/presence.py`
+- [ ] Maintain per-device presence state machine: `ABSENT` → `ARRIVING` → `PRESENT` → `LEAVING` → `ABSENT`
+- [ ] `ARRIVING` → `PRESENT`: face continuously detected for > `PRESENCE_ARRIVE_S` (default 1.0s)
+- [ ] `PRESENT` → `LEAVING`: face absent for > `PRESENCE_LEAVE_S` (default 5.0s)
+- [ ] Emit events: `player_arrived`, `player_left`
+- [ ] Publish presence events to Redis Pub/Sub for admin live view
+- [ ] On `player_left` during active game: trigger session abandon after 10s total absence
+
+### 7.3 Speech-to-Text (STT)
+- [ ] Implement `app/services/speech/stt.py`
+- [ ] Load `faster-whisper` model (configurable: `small` / `medium`, device: `cuda` / `cpu`)
+- [ ] `transcribe(pcm_audio_bytes, language)` → run Whisper inference, return transcribed text string
+- [ ] Handle audio buffering: accumulate PCM chunks until end-of-utterance signal, then transcribe full utterance
+- [ ] Target latency: ≤ 1.5s for 2-second voice clips
+
+### 7.4 Answer Mapper (Multilingual)
+- [ ] Implement `app/services/speech/answer_mapper.py`
+- [ ] `map_answer(transcribed_text, language)` → return one of: `yes`, `no`, `dont_know`, `probably`, `probably_not`, or `None` (ambiguous)
+- [ ] Keyword dictionaries for each language:
+  - **English**: yes/yeah/yep/sure, no/nope/nah, don't know/no idea/not sure, probably/maybe/I think so, probably not/doubt it/I don't think so
+  - **French**: oui/ouais/bien sûr, non/pas du tout, je ne sais pas/aucune idée, peut-être/probablement, probablement pas/j'en doute
+  - **Arabic (Darija)**: na3am/wah/ih/iyeh, la/lala, ma3labalich/maranich 3aref/ma3raftch, momkin/yimkin/rab3ma, ba3id/chwiya la/ma nadonch
+- [ ] Fuzzy matching with confidence threshold for handling transcription errors
+- [ ] Return `None` when no confident match → triggers "please repeat" prompt
+
+### 7.5 Text-to-Speech (TTS)
+- [ ] Implement `app/services/speech/tts.py`
+- [ ] Initialize Piper TTS with models for supported languages
+- [ ] `synthesize(text, language)` → generate WAV/PCM audio bytes
+- [ ] `stream_to_robot(audio_bytes, ws_connection)` → send as binary 0x03 frames over WebSocket
+- [ ] Controlled by `TTS_ENABLED` env variable (can be disabled)
+
+### 7.6 Wire Vision & Speech into WebSocket Handlers
+- [ ] In `ws/robot.py`: route incoming 0x01 frames to `detector.detect_faces()` → `presence.update()`
+- [ ] In `ws/robot.py`: route incoming 0x02 audio to `stt.transcribe()` → `answer_mapper.map_answer()` → feed result into game engine
+- [ ] In `ws/robot.py`: after game engine produces a question, call `tts.synthesize()` → send 0x03 frame back
+- [ ] Ensure heavy processing (STT, vision, LLM) runs in a thread pool, never blocking the WS handler
+
+### 7.7 Milestone 7 Verification
+- [ ] Send a test JPEG to `/ws/robot` → receive `player_arrived` event after 1s of face presence
+- [ ] Send PCM audio of "yes" in English → receive correctly mapped answer
+- [ ] TTS generates and streams audio back to the WebSocket client
+- [ ] Write `tests/test_mapper.py` — unit tests for all 3 languages × 5 answer types + ambiguous inputs
+- [ ] Write `tests/test_detector.py` — face detection returns bounding boxes for test images
 
 ---
 
@@ -441,9 +441,9 @@
 | **M1** | Project Skeleton & Foundation | 19 |
 | **M2** | Database Models & Persistence | 24 |
 | **M3** | Game Engine (KB Mode) | 26 |
-| **M4** | LLM Integration | 17 |
-| **M5** | WebSocket Gateway | 22 |
-| **M6** | Vision & Speech Services | 24 |
-| **M7** | Admin API, Auth & Live Monitoring | 26 |
+| **M4** | Admin API, Auth & Live Monitoring | 26 |
+| **M5** | LLM Integration | 17 |
+| **M6** | WebSocket Gateway | 22 |
+| **M7** | Vision & Speech Services | 24 |
 | **M8** | Hardening, Testing & Performance | 28 |
 | | **Total** | **186** |
