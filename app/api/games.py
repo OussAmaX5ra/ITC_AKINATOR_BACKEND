@@ -29,6 +29,7 @@ from app.api.schemas import (
     TurnResponse,
     VerdictResponse,
 )
+from app.extensions import limiter
 from app.repositories.session_repo import SessionRepository
 from app.services.game import engine, session_store
 
@@ -39,6 +40,7 @@ games_bp = Blueprint("games", __name__, url_prefix="/api/games")
 
 @games_bp.route("", methods=["POST"])
 @games_bp.route("/", methods=["POST"])
+@limiter.limit("10/minute")
 def start_game():
     """Start a new game session.
 
@@ -91,6 +93,7 @@ def get_game_session(session_id: str):
 
 
 @games_bp.route("/<session_id>/answer", methods=["POST"])
+@limiter.limit("60/minute")
 def submit_answer(session_id: str):
     """Submit an answer to the current question.
 

@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.entity import EntityCategory
+from app.models.prompt_version import PromptLanguage
 from app.models.session import GameCategory, GameLanguage, SessionSource
 from app.models.turn import InputMethod, TurnAnswer
 
@@ -204,6 +205,57 @@ class UpdateEntityRequest(BaseModel):
     is_approved: Optional[bool] = Field(
         default=None,
         description="Approval / active status.",
+    )
+
+
+class CreatePromptVersionRequest(BaseModel):
+    """Payload for creating a new version of system prompts (POST /api/admin/prompt-versions)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(
+        default="game_system",
+        max_length=50,
+        description="Prompt identifier name.",
+    )
+    language: PromptLanguage = Field(
+        description="Target language for prompt version (ar, fr, en).",
+    )
+    content: str = Field(
+        min_length=1,
+        description="Full system prompt text.",
+    )
+    version: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description="Explicit version number (autoincrements if omitted).",
+    )
+    is_active: bool = Field(
+        default=True,
+        description="Whether to activate this version immediately (deactivates previous active versions).",
+    )
+
+
+class ApproveTeachRequest(BaseModel):
+    """Optional payload for approving a teach submission (POST /api/admin/teach-submissions/{id}/approve)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    category: Optional[EntityCategory] = Field(
+        default=None,
+        description="Category of the entity to create/update.",
+    )
+    names_i18n: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Optional translations dictionary.",
+    )
+    attributes: Optional[Dict[str, float]] = Field(
+        default=None,
+        description="Optional explicit attributes (if omitted, extracted from Q&A trail).",
+    )
+    create_entity: bool = Field(
+        default=True,
+        description="Whether to insert a new Entity record if not already linked.",
     )
 
 

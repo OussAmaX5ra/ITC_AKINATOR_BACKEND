@@ -37,6 +37,12 @@ from app.repositories.guess_repo import GuessRepository
 from app.repositories.session_repo import SessionRepository
 from app.repositories.teach_repo import TeachRepository
 from app.repositories.turn_repo import TurnRepository
+from app.services.events import (
+    publish_guess_event,
+    publish_state_change,
+    publish_turn_event,
+    publish_verdict_event,
+)
 from app.services.game import candidates, fallback, session_store
 from app.services.game.session_store import GameState
 
@@ -116,6 +122,14 @@ def start_game(
     # 4. Prepare the initial question in session state
     get_next_action(sess_id)
 
+    # 5. Broadcast game started to live stream
+    publish_state_change(
+        sess_id,
+        GameState.ASKING,
+        device_id=device_id,
+        extra={"category": cat_enum.value, "language": lang_enum.value},
+    )
+
     logger.info(
         "Game started: session_id=%s, category=%s, language=%s, candidates=%d",
         sess_id,
@@ -167,8 +181,9 @@ def process_answer(
     if state.get("state") == GameState.FINISHED:
         raise ValueError(f"Session '{session_id}' has already finished.")
 
-    # 1. Immediately emit thinking state in Redis
+    # 1. Immediately emit thinking state in Redis and Pub/Sub
     session_store.update_session(session_id, {"state": GameState.THINKING})
+    publish_state_change(session_id, GameState.THINKING, device_id=state.get("device_id"))
 
     # Validate enum strings
     turn_ans = TurnAnswer(answer.lower())
@@ -209,6 +224,18 @@ def process_answer(
         input_method=inp_method,
         confidence=confidence,
         latency_ms=latency_ms,
+    )
+
+    # Broadcast turn event to admin live stream
+    publish_turn_event(
+        session_id=session_id,
+        turn_no=turn_no,
+        question=last_question,
+        answer=turn_ans.value,
+        input_method=inp_method.value,
+        confidence=confidence,
+        latency_ms=latency_ms,
+        device_id=state.get("device_id"),
     )
 
     # 5. Update session in PostgreSQL
@@ -396,6 +423,19 @@ def _propose_guess(
         },
     )
 
+    # Broadcast guess event to admin live stream
+    curr_state = session_store.get_session(session_id)
+    device_id = curr_state.get("device_id") if curr_state else None
+    publish_guess_event(
+        session_id=session_id,
+        guess_name=guess_name,
+        entity_id=entity_id,
+        confidence=confidence,
+        guess_no=guess_no,
+        turn_no=turn_no,
+        device_id=device_id,
+    )
+
     logger.info(
         "Proposing guess #%d: '%s' (id=%d, confidence=%.3f) for session %s",
         guess_no,
@@ -460,6 +500,13 @@ def submit_verdict(session_id: str, is_correct: bool) -> Dict[str, Any]:
         session_store.update_session(session_id, {"state": GameState.FINISHED})
 
         logger.info("Session %s ended with WIN (guess: '%s')", session_id, guess_name)
+        publish_verdict_event(
+            session_id=session_id,
+            outcome="win",
+            is_correct=True,
+            guess_name=guess_name,
+            device_id=state.get("device_id"),
+        )
         return {
             "session_id": session_id,
             "outcome": "win",
@@ -586,6 +633,12 @@ def submit_teach(session_id: str, correct_name: str) -> Dict[str, Any]:
         clean_name,
         submission.id,
     )
+    publish_state_change(
+        session_id,
+        "teach_submitted",
+        device_id=state.get("device_id") if state else None,
+        extra={"submitted_name": clean_name, "submission_id": submission.id},
+    )
 
     return {
         "session_id": session_id,
@@ -615,6 +668,7 @@ def abandon_session(session_id: str) -> Dict[str, Any]:
     session_store.delete_session(session_id)
 
     logger.info("Session %s abandoned", session_id)
+    publish_state_change(session_id, SessionStatus.ABANDONED.value)
     return {
         "session_id": session_id,
         "status": "abandoned",

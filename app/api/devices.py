@@ -24,6 +24,7 @@ from app.api.schemas import (
 from app.extensions import limiter, redis_client
 from app.models.device import Device, DeviceStatus
 from app.repositories.device_repo import DeviceRepository
+from app.services.events import publish_device_heartbeat
 from app.utils.security import (
     decode_jwt,
     generate_device_token,
@@ -222,20 +223,15 @@ def device_heartbeat(device_id: str) -> Any:
         logger.warning("Redis error setting heartbeat for device %s: %s", device.id, err)
 
     # 6. Publish telemetry to Redis Pub/Sub for admin dashboard live view
-    try:
-        event = {
-            "type": "device_heartbeat",
-            "device_id": str(device.id),
-            "name": device.name,
-            "status": DeviceStatus.ONLINE.value,
-            "camera_ok": updated_device.camera_ok if updated_device else device.camera_ok,
-            "mic_ok": updated_device.mic_ok if updated_device else device.mic_ok,
-            "firmware_version": updated_device.firmware_version if updated_device else device.firmware_version,
-            "last_heartbeat": updated_device.last_heartbeat.isoformat() if updated_device and updated_device.last_heartbeat else None,
-        }
-        redis_client.publish("admin:live_stream", json.dumps(event))
-    except Exception as err:
-        logger.debug("Redis pub/sub error publishing device heartbeat: %s", err)
+    publish_device_heartbeat(
+        device_id=str(device.id),
+        name=device.name,
+        status=DeviceStatus.ONLINE.value,
+        camera_ok=updated_device.camera_ok if updated_device else device.camera_ok,
+        mic_ok=updated_device.mic_ok if updated_device else device.mic_ok,
+        firmware_version=updated_device.firmware_version if updated_device else device.firmware_version,
+        last_heartbeat=updated_device.last_heartbeat.isoformat() if updated_device and updated_device.last_heartbeat else None,
+    )
 
     response_data = DeviceHeartbeatResponse(
         status="ok",

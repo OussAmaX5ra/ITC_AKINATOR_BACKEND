@@ -48,9 +48,26 @@ def create_app(config_name: Optional[str] = None) -> Flask:
         app,
         resources={r"/api/*": {"origins": cors_origins}},
         supports_credentials=True,
+        expose_headers=[
+            "Content-Type",
+            "Authorization",
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+            "Retry-After",
+        ],
+        allow_headers=[
+            "Content-Type",
+            "Authorization",
+            "X-Device-Token",
+            "X-Request-ID",
+        ],
+        max_age=600,  # preflight cache duration in seconds
     )
 
     if app.config.get("RATELIMIT_ENABLED", True):
+        # Ensure the limiter uses the app-level storage URI (Redis in prod, memory in tests)
+        app.config.setdefault("RATELIMIT_STORAGE_URI", app.config.get("REDIS_URL", "memory://"))
         limiter.init_app(app)
 
     # 3. Register Blueprints

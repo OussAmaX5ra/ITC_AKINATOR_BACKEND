@@ -128,4 +128,5 @@ class Session(db.Model):
         if include_turns:
             data["turns"] = [turn.to_dict() for turn in self.turns]
             data["guesses"] = [guess.to_dict() for guess in self.guesses]
+            data["teach_submissions"] = [sub.to_dict() for sub in self.teach_submissions]
         return data

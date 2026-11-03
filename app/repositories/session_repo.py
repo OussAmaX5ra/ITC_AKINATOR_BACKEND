@@ -92,6 +92,8 @@ class SessionRepository:
         status: Optional[SessionStatus] = None,
         source: Optional[SessionSource] = None,
         device_id: Optional[uuid.UUID | str] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
         limit: int = 20,
         offset: int = 0,
     ) -> List[Session]:
@@ -103,13 +105,32 @@ class SessionRepository:
         if device_id is not None:
             dev_uuid = uuid.UUID(str(device_id))
             query = query.filter_by(device_id=dev_uuid)
+        if date_from is not None:
+            query = query.filter(Session.started_at >= date_from)
+        if date_to is not None:
+            query = query.filter(Session.started_at <= date_to)
 
         query = query.order_by(Session.started_at.desc()).limit(limit).offset(offset)
         return list(db.session.scalars(query).all())
 
     @staticmethod
-    def count_sessions(status: Optional[SessionStatus] = None) -> int:
+    def count_sessions(
+        status: Optional[SessionStatus] = None,
+        source: Optional[SessionSource] = None,
+        device_id: Optional[uuid.UUID | str] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+    ) -> int:
         query = db.select(db.func.count(Session.id))
         if status is not None:
             query = query.filter_by(status=status)
+        if source is not None:
+            query = query.filter_by(source=source)
+        if device_id is not None:
+            dev_uuid = uuid.UUID(str(device_id))
+            query = query.filter_by(device_id=dev_uuid)
+        if date_from is not None:
+            query = query.filter(Session.started_at >= date_from)
+        if date_to is not None:
+            query = query.filter(Session.started_at <= date_to)
         return db.session.scalar(query) or 0

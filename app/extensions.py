@@ -35,10 +35,15 @@ cors: CORS = CORS()
 jwt: JWTManager = JWTManager()
 
 # ── Rate Limiter ─────────────────────────────────────────────────────────────
+# storage_uri is intentionally left as "memory://" here — the application factory
+# calls limiter.init_app(app) which reads RATELIMIT_STORAGE_URI from app.config
+# and transparently switches to Redis in production while keeping memory:// for tests.
 limiter: Limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200/hour"],
-    storage_uri="memory://",  # overridden in init_app with app.config["RATELIMIT_STORAGE_URI"]
+    storage_uri="memory://",
+    strategy="fixed-window",
+    headers_enabled=True,
 )
 
 

@@ -192,26 +192,27 @@
 - [x] `POST /api/entities/seed` — bulk import from uploaded JSON/CSV file (admin only)
 
 ### 4.5 Admin Dashboard API
-- [ ] Create `app/api/admin.py` blueprint
-- [ ] `GET /api/admin/stats` — aggregate statistics: total games played, win rate, average question count, games per category, games per language, average STT latency, games today/this week/this month
-- [ ] `GET /api/admin/sessions` — list sessions with filters (status, source, date range, device_id), pagination
-- [ ] `GET /api/admin/sessions/{id}` — session detail with all turns, guesses, and teach submissions
-- [ ] `GET /api/admin/teach-submissions` — list pending teach submissions, paginated
-- [ ] `POST /api/admin/teach-submissions/{id}/approve` — approve submission: set status = approved, optionally create/update entity with extracted attributes, set `is_approved = true`
-- [ ] `POST /api/admin/teach-submissions/{id}/reject` — reject submission: set status = rejected
-- [ ] `GET /api/admin/prompt-versions` — list all prompt versions grouped by language
-- [ ] `POST /api/admin/prompt-versions` — create a new prompt version (set previous as inactive)
-- [ ] Protect all admin routes with `@jwt_required` and `@role_required("admin")`
+- [x] Create `app/api/admin.py` blueprint
+- [x] `GET /api/admin/stats` — aggregate statistics: total games played, win rate, average question count, games per category, games per language, average STT latency, games today/this week/this month
+- [x] `GET /api/admin/sessions` — list sessions with filters (status, source, date range, device_id), pagination
+- [x] `GET /api/admin/sessions/{id}` — session detail with all turns, guesses, and teach submissions
+- [x] `GET /api/admin/teach-submissions` — list pending teach submissions, paginated
+- [x] `POST /api/admin/teach-submissions/{id}/approve` — approve submission: set status = approved, optionally create/update entity with extracted attributes, set `is_approved = true`
+- [x] `POST /api/admin/teach-submissions/{id}/reject` — reject submission: set status = rejected
+- [x] `GET /api/admin/prompt-versions` — list all prompt versions grouped by language
+- [x] `POST /api/admin/prompt-versions` — create a new prompt version (set previous as inactive)
+- [x] Protect all admin routes with `@jwt_required` and `@role_required("admin")`
 
 ### 4.6 Redis Pub/Sub Live Stream
-- [ ] Implement publishing in the game engine: after each turn, guess, and state change, publish event to `admin:live_stream` channel
-- [ ] Implement publishing in the device manager: heartbeat status changes, online/offline transitions
-- [ ] Implement publishing in the vision service: face detection events with bounding box data
-- [ ] In `ws/admin.py`: subscribe to `admin:live_stream`, filter events by the admin's subscribed `device_id` or `session_id`, forward matching events over the WebSocket
+- [x] Implement publishing in the game engine: after each turn, guess, and state change, publish event to `admin:live_stream` channel
+- [x] Implement publishing in the device manager: heartbeat status changes, online/offline transitions
+- [x] Implement publishing in the vision service: face detection events with bounding box data
+- [x] In `ws/admin.py`: subscribe to `admin:live_stream`, filter events by the admin's subscribed `device_id` or `session_id`, forward matching events over the WebSocket
 
 ### 4.7 CORS & Rate Limiting
-- [ ] Configure Flask-CORS to allow origins for the React web app
-- [ ] Configure Flask-Limiter: rate limits on `/api/auth/login` (e.g., 5/min), `/api/games` (e.g., 10/min), global default
+- [x] Configure Flask-CORS to allow origins for the React web app
+- [x] Configure Flask-Limiter: rate limits on `/api/auth/login` (e.g., 5/min), `/api/games` (e.g., 10/min), global default
+- [ ] fix issues : 13 failures — but they are all in test_session_store, test_devices, and test_pubsub_livestream — and they are all Redis-related (fake_redis.exists(...) returns 0, fake_redis.ttl(...) returns -2). These are pre-existing failures caused by a fakeredis isolation issue — the test_cors_ratelimit.py 429 test creates a brand-new create_app("testing") instance and calls redis_client._client = fake on the module-level singleton. This replaces the shared fake Redis that other tests were using
 
 ### 4.8 Milestone 4 Verification
 - [ ] Admin can log in via `/api/auth/login` and receive JWT
